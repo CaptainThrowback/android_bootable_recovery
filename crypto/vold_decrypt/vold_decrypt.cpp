@@ -1013,6 +1013,24 @@ int Vold_Decrypt_Core(const string& Password) {
 		return VD_ERR_PASSWORD_EMPTY;
 	}
 
+#ifdef AB_OTA_UPDATER
+/*
+	Mount system and check for vold and vdc
+	For AB devices, system needs to be mounted at /system_root, and then /system_root/system needs to be
+	mounted at /system for vold_decrypt to work properly. Since vold_decrypt checks for the existence of
+	the vold and vdc binaries at hard-coded paths, this check needs to be updated for the expected
+	location of system in an AB setup.
+*/
+	if (!PartitionManager.Mount_By_Path("/system_root", true)) {
+		return VD_ERR_UNABLE_TO_MOUNT_SYSTEM;
+	} else if (!TWFunc::Path_Exists("/system_root/system/bin/vold")) {
+		LOGINFO("ERROR: vold not found, aborting.\n");
+		return VD_ERR_MISSING_VOLD;
+	} else if (!TWFunc::Path_Exists("/system_root/system/bin/vdc")) {
+		LOGINFO("ERROR: vdc not found, aborting.\n");
+		return VD_ERR_MISSING_VDC;
+	}
+#else
 	// Mount system and check for vold and vdc
 	if (!PartitionManager.Mount_By_Path("/system", true)) {
 		return VD_ERR_UNABLE_TO_MOUNT_SYSTEM;
@@ -1023,6 +1041,7 @@ int Vold_Decrypt_Core(const string& Password) {
 		LOGINFO("ERROR: /system/bin/vdc not found, aborting.\n");
 		return VD_ERR_MISSING_VDC;
 	}
+#endif
 
 	fp_kmsg = fopen("/dev/kmsg", "a");
 
@@ -1109,12 +1128,22 @@ int Vold_Decrypt_Core(const string& Password) {
 	if (is_fstab_symlinked)
 		Restore_Recovery_Fstab();
 
+#ifdef AB_OTA_UPDATER
+	// For AB devices, system is mounted at /system_root
+	if (!PartitionManager.UnMount_By_Path("/system_root", true)) {
+		// PartitionManager failed to unmount /system_root, this should not happen,
+		// but in case it does, do a lazy unmount
+		LOGINFO("WARNING: system could not be unmounted normally!\n");
+		umount2("/system_root", MNT_DETACH);
+	}
+#else
 	if (!PartitionManager.UnMount_By_Path("/system", true)) {
 		// PartitionManager failed to unmount /system, this should not happen,
 		// but in case it does, do a lazy unmount
 		LOGINFO("WARNING: system could not be unmounted normally!\n");
 		umount2("/system", MNT_DETACH);
 	}
+#endif
 
 	LOGINFO("Finished.\n");
 
