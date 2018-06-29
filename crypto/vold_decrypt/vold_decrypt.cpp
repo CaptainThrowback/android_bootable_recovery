@@ -801,13 +801,12 @@ int Exec_vdc_cryptfs(const string& command, const string& argument, vdc_ReturnVa
 		}
 	}
 
-#ifdef AB_OTA_UPDATER
-	const char *cmd[] = { "/system/system/bin/vdc", "cryptfs" };
-	const char *env[] = { "LD_LIBRARY_PATH=/system/system/lib64:/system/system/lib", NULL };
-#else
-	const char *cmd[] = { "/system/bin/vdc", "cryptfs" };
-	const char *env[] = { "LD_LIBRARY_PATH=/system/lib64:/system/lib", NULL };
-#endif
+//*#ifdef AB_OTA_UPDATER
+	const char *cmd[] = { "/sbin/vdc", "cryptfs" };
+//*#else
+	//const char *cmd[] = { "/system/bin/vdc", "cryptfs" };
+	const char *env[] = { "LD_LIBRARY_PATH=/system/system/lib64:/system/system/lib:/sbin", NULL };
+//#endif
 
 #ifdef TW_CRYPTO_SYSTEM_VOLD_DEBUG
 	string log_name = "/tmp/strace_vdc_" + command;
@@ -1021,10 +1020,10 @@ int Vold_Decrypt_Core(const string& Password) {
 	// Mount system and check for vold and vdc
 	if (!PartitionManager.Mount_By_Path("/system", true)) {
 		return VD_ERR_UNABLE_TO_MOUNT_SYSTEM;
-	} else if ((!TWFunc::Path_Exists("/system/bin/vold")) && (!TWFunc::Path_Exists("/system/system/bin/vold"))) {
+	} else if ((!TWFunc::Path_Exists("/system/bin/vold")) && (!TWFunc::Path_Exists("/system/system/bin/vold")) && (!TWFunc::Path_Exists("/sbin/vold"))) {
 		LOGINFO("ERROR: vold not found, aborting.\n");
 		return VD_ERR_MISSING_VOLD;
-	} else if ((!TWFunc::Path_Exists("/system/bin/vdc")) && (!TWFunc::Path_Exists("/system/system/bin/vdc"))) {
+	} else if ((!TWFunc::Path_Exists("/system/bin/vdc")) && (!TWFunc::Path_Exists("/system/system/bin/vdc")) && (!TWFunc::Path_Exists("/sbin/vdc"))) {
 		LOGINFO("ERROR: vdc not found, aborting.\n");
 		return VD_ERR_MISSING_VDC;
 	}
@@ -1038,7 +1037,7 @@ int Vold_Decrypt_Core(const string& Password) {
 	is_Vendor_Mounted();
 	is_Firmware_Mounted();
 
-	LOGINFO("Attempting to use system's vold for decryption...\n");
+	LOGINFO("Attempting to use vold for decryption...\n");
 
 #ifdef TW_CRYPTO_SYSTEM_VOLD_DEBUG
 	Strace_init_Start();

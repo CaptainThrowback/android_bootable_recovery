@@ -26,7 +26,7 @@
 
 #define CRYPT_FOOTER_OFFSET 0x4000
 
-char* default_path = "/dev/block/bootdevice/by-name/userdata";
+char* default_path = "/dev/block/bootdevice/by-name/extra";
 
 static unsigned int get_blkdev_size(int fd) {
 	unsigned long nr_sec;
